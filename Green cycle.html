@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenCycle Waste Management</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+  <!-- Add Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: #fdfdf8;
+      font-family: 'Inter', sans-serif;
+      color: #2c2c2c;
+      position: relative;
+    }
+
+    .navbar {
+      padding: 0.5rem 1rem;
+    }
+
+    .navbar .nav-link.active {
+      color: #2E7D32 !important;
+      font-weight: 700;
+      border-bottom: 2px solid #2E7D32;
+    }
+
+    .nav-link {
+      position: relative;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: #FF9800;
+      transition: width 0.3s ease-in-out;
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-link:hover {
+      color: #FF9800;
+    }
+
+    input:invalid {
+      animation: shake 0.2s ease-in-out 0s 2;
+      border-color: #dc3545;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0px); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-4px); }
+      100% { transform: translateX(0px); }
+    }
+
+    section {
+      padding: 80px 0;
+      display: none;
+    }
+
+    .navbar-brand {
+      font-size: 2rem;
+      color: #2E7D32;
+      font-weight: 700;
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    .highlight-box {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .highlight-box h3 {
+      font-size: 1.5rem;
+      color: #2E7D32;
+      margin-bottom: 1rem;
+    }
+
+    .highlight-box p {
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .theme-toggle {
+      background-color: #2E7D32;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      z-index: 1000;
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #f0f0f0;
+    }
+
+    body.dark-mode .highlight-box,
+    body.dark-mode .navbar,
+    body.dark-mode .bg-light,
+    body.dark-mode .card,
+    body.dark-mode .list-group-item {
+      background-color: #1e1e1e !important;
+      color: #f0f0f0;
+      border-color: #333 !important;
+    }
+
+    .mock-map {
+      /* Remove background, set height for real map */
+      width: 100%;
+      height: 400px;
+      border: 2px solid #4CAF50;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      /* Remove background and flex styles */
+      background: none;
+      display: block;
+      padding: 0;
+    }
+
+    #realMap {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    .map-content {
+      /* Overlay controls, keep as is or adjust if needed */
+      z-index: 2;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 8px;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      pointer-events: none;
+    }
+
+    .map-content button {
+      pointer-events: auto;
+    }
+
+    .metric-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #2E7D32;
+    }
+
+    .metric-label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .trend-up {
+      color: #4CAF50;
+    }
+
+    .trend-down {
+      color: #F44336;
+    }
+
+    .chat-widget {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background: #2E7D32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .chat-widget:hover {
+      transform: scale(1.1);
+      background: #1B5E20;
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #FF5722;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-ring {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+    }
+
+    .progress-ring-circle {
+      stroke: #e6e6e6;
+      stroke-width: 8;
+      fill: transparent;
+      r: 52;
+      cx: 60;
+      cy: 60;
+    }
+
+    .progress-ring-fill {
+      stroke: #4CAF50;
+      stroke-width: 8;
+      fill: transparent;
+      r: 52;
+      cx: 60;
+      cy: 60;
+      stroke-dasharray: 327;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .service-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background: #E8F5E8;
+      color: #2E7D32;
+    }
+
+    .status-pending {
+      background: #FFF3E0;
+      color: #F57C00;
+    }
+
+    .status-completed {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    .nature-carousel .carousel-item img {
+      object-fit: cover;
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      transition: transform 2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .nature-carousel .carousel-item.active img,
+    .nature-carousel .carousel-item-next img,
+    .nature-carousel .carousel-item-prev img {
+      animation: natureZoom 8s linear infinite;
+    }
+    @keyframes natureZoom {
+      0% { transform: scale(1);}
+      50% { transform: scale(1.07);}
+      100% { transform: scale(1);}
+    }
+    @media (max-width: 768px) {
+      .nature-carousel .carousel-item img {
+        height: 160px;
+      }
+    }
+
+    .eco-fact-widget {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #2E7D32;
+      color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(44, 125, 50, 0.15);
+      padding: 18px 28px 18px 22px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      z-index: 1001;
+      min-width: 260px;
+      max-width: 340px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: ecoFactFadeIn 1s;
+    }
+    .eco-fact-leaf {
+      font-size: 2rem;
+      margin-right: 8px;
+      animation: ecoLeafWiggle 2s infinite;
+    }
+    @keyframes ecoFactFadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes ecoLeafWiggle {
+      0%, 100% { transform: rotate(-8deg); }
+      50% { transform: rotate(8deg); }
+    }
+    @media (max-width: 600px) {
+      .eco-fact-widget { font-size: 0.95rem; min-width: 180px; max-width: 90vw; padding: 12px 12px 12px 14px; }
+      .eco-fact-leaf { font-size: 1.3rem; }
+    }
+
+    .chat-window {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 340px;
+      max-width: 95vw;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(44,125,50,0.18);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1.5px solid #2E7D32;
+      animation: chatPopIn 0.3s;
+    }
+    .chat-header {
+      background: #2E7D32;
+      color: #fff;
+      padding: 12px 16px;
+      font-size: 1.1rem;
+    }
+    .chat-messages {
+      background: #f8f8f8;
+      padding: 14px 12px;
+      height: 220px;
+      overflow-y: auto;
+      font-size: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-bot-msg {
+      background: #e8f5e9;
+      color: #2E7D32;
+      border-radius: 10px 10px 10px 2px;
+      padding: 8px 12px;
+      max-width: 85%;
+      align-self: flex-start;
+    }
+    .chat-user-msg {
+      background: #c8e6c9;
+      color: #1b5e20;
+      border-radius: 10px 10px 2px 10px;
+      padding: 8px 12px;
+      max-width: 85%;
+      align-self: flex-end;
+    }
+    .chat-input-area {
+      padding: 10px;
+      background: #f1f1f1;
+      border-top: 1px solid #e0e0e0;
+    }
+    @keyframes chatPopIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 600px) {
+      .chat-window { width: 98vw; right: 1vw; }
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#" onclick="showSection('home')">
+        <img src="Logo.png" alt="GreenCycle Logo" width="40" height="40" class="d-inline-block align-text-top">
+        GreenCycle
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="#home" onclick="showSection('home'); setActiveNav(this)">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#about" onclick="showSection('about'); setActiveNav(this)">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#services" onclick="showSection('services'); setActiveNav(this)">Services</a></li>
+          <li class="nav-item"><a class="nav-link" href="#register" onclick="showSection('register'); setActiveNav(this)">Register</a></li>
+          <li class="nav-item"><a class="nav-link" href="#schedule" onclick="showSection('schedule'); setActiveNav(this)">Schedule</a></li>
+          <li class="nav-item"><a class="nav-link" href="#route" onclick="showSection('route'); setActiveNav(this)">Routes</a></li>
+          <li class="nav-item"><a class="nav-link" href="#analytics" onclick="showSection('analytics'); setActiveNav(this)">Analytics</a></li>
+          <li class="nav-item"><a class="nav-link" href="#customer-portal" onclick="showSection('customer-portal'); setActiveNav(this)">Portal</a></li>
+          <li class="nav-item"><a class="nav-link" href="#map" onclick="showSection('map'); setActiveNav(this)">Map</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact" onclick="showSection('contact'); setActiveNav(this)">Contact</a></li>
+        </ul>
+        <button class="theme-toggle ms-3" onclick="toggleTheme()">Toggle Theme</button>
+      </div>
+    </div>
+  </nav>
+ 
+  <section id="home" class="container" data-aos="fade-up">
+    <h2 class="section-title">Welcome to GreenCycle</h2>
+    <div class="highlight-box">
+      <p>GreenCycle is a forward-thinking waste management company committed to innovation, efficiency, and sustainability. Our goal is to create cleaner communities and a greener planet through advanced waste collection, recycling programs, and smart route optimization.</p>
+      <div class="row text-center mt-4">
+        <div class="col-md-3">
+          <div class="p-3 border rounded bg-light">
+            <h4 class="text-success">10+</h4>
+            <p>Years of Experience</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded bg-light">
+            <h4 class="text-success">50K+</h4>
+            <p>Tons of Waste Managed</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded bg-light">
+            <h4 class="text-success">100+</h4>
+            <p>Happy Communities</p>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 border rounded bg-light">
+            <h4 class="text-success">24/7</h4>
+            <p>Support & Monitoring</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <h3>Learn About Our Mission</h3>
+      <div class="mock-video bg-dark d-flex align-items-center justify-content-center text-white position-relative" style="height: 400px; border-radius: 8px;">
+        <div class="text-center">
+          <div class="mb-3">
+            <span style="font-size: 4rem;">▶️</span>
+          </div>
+          <h4>Smart Waste Management Explained</h4>
+          <p class="mb-3">Watch how GreenCycle revolutionizes waste collection</p>
+          <small class="text-muted">Video: "Sustainable Waste Solutions" - 5:30 duration</small>
+        </div>
+        <div class="position-absolute bottom-0 start-0 end-0 bg-success" style="height: 4px;">
+          <div class="bg-warning h-100" style="width: 0%; animation: videoProgress 10s ease-in-out infinite;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="container" data-aos="fade-up">
+    <h2 class="section-title">About GreenCycle</h2>
+    <div class="row">
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="highlight-box">
+          <h3>Our Mission</h3>
+          <p>At GreenCycle, our mission is to revolutionize waste management through sustainable, technology-driven solutions that preserve our environment for future generations.</p>
+        </div>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="highlight-box">
+          <h3>Our Vision</h3>
+          <p>We envision a cleaner, greener world where communities thrive in harmony with nature, supported by efficient and eco-friendly waste solutions.</p>
+        </div>
+      </div>
+      <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="highlight-box">
+          <h3>Meet Our Team</h3>
+          <p>Our team is composed of environmental scientists, engineers, developers, and community organizers who are passionate about sustainable impact and innovation.</p>
+        </div>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <h3>Our Clients</h3>
+      <div id="clientCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="mock-image bg-success d-flex align-items-center justify-content-center text-white" style="height: 280px;">
+              <div class="text-center">
+                <h4>♻️ Recycling Initiative</h4>
+                <p>Advanced recycling programs for sustainable communities</p>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="mock-image bg-primary d-flex align-items-center justify-content-center text-white" style="height: 280px;">
+              <div class="text-center">
+                <h4>🌱 Green Technology</h4>
+                <p>Smart solutions for environmental protection</p>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="mock-image bg-warning d-flex align-items-center justify-content-center text-white" style="height: 280px;">
+              <div class="text-center">
+                <h4>🚛 Waste Management</h4>
+                <p>Efficient collection and processing systems</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#clientCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#clientCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="container" data-aos="fade-up">
+    <h2 class="section-title">Our Services</h2>
+    <div class="highlight-box">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="p-4 border rounded bg-light h-100">
+            <h4 class="text-success">Residential Waste Collection</h4>
+            <p>Reliable and scheduled pickups for households to ensure a clean and healthy living environment.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-4 border rounded bg-light h-100">
+            <h4 class="text-success">Commercial Waste Management</h4>
+            <p>Customized waste solutions for businesses to maintain eco-friendly operations and comply with regulations.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-4 border rounded bg-light h-100">
+            <h4 class="text-success">Recycling & Composting</h4>
+            <p>Programs to reduce landfill dependency by promoting recycling, reuse, and composting techniques.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-4 border rounded bg-light h-100">
+            <h4 class="text-success">Smart Route Optimization</h4>
+            <p>AI-powered logistics to minimize fuel usage and reduce carbon emissions during waste collection.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="register" class="container" data-aos="fade-up">
+    <h2 class="section-title">Register</h2>
+    <form id="registrationForm" class="highlight-box">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" required />
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" required />
+      </div>
+      <div class="mb-3">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="tel" class="form-control" id="phone" required />
+      </div>
+      <button type="submit" class="btn btn-success">Register</button>
+    </form>
+    
+    <div id="userProfile" class="highlight-box mt-4" style="display: none;">
+      <!-- User profile will be rendered here -->
+    </div>
+  </section>
+
+  <section id="schedule" class="container" data-aos="fade-up">
+    <h2 class="section-title">Manage Schedule</h2>
+    <form id="scheduleForm" class="highlight-box">
+      <div class="mb-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" class="form-control" id="date" required />
+      </div>
+      <div class="mb-3">
+        <label for="time" class="form-label">Time</label>
+        <input type="time" class="form-control" id="time" required />
+      </div>
+      <div class="mb-3">
+        <label for="location" class="form-label">Location</label>
+        <input type="text" class="form-control" id="location" placeholder="Enter location" required />
+      </div>
+      <button type="submit" class="btn btn-success">Add Schedule</button>
+    </form>
+    <div id="scheduleCards" class="mt-4"></div>
+  </section>
+
+  <section id="route" class="container" data-aos="fade-up">
+    <h2 class="section-title">Advanced Route Optimization</h2>
+    
+    <!-- Enhanced Route Input -->
+    <form id="routeForm" class="highlight-box">
+      <div class="row">
+        <div class="col-md-8">
+          <label for="locations" class="form-label">Pickup Locations</label>
+          <textarea class="form-control" id="locations" rows="3" placeholder="Enter addresses (one per line)&#10;123 Main St, Dublin&#10;456 Oak Ave, Dublin&#10;789 Pine Rd, Dublin" required></textarea>
+        </div>
+        <div class="col-md-4">
+          <label for="vehicleType" class="form-label">Vehicle Type</label>
+          <select class="form-control" id="vehicleType">
+            <option value="small">Small Truck (5 tons)</option>
+            <option value="medium" selected>Medium Truck (10 tons)</option>
+            <option value="large">Large Truck (15 tons)</option>
+          </select>
+          <div class="mt-2">
+            <label for="prioritizeBy" class="form-label">Optimize For</label>
+            <select class="form-control" id="prioritizeBy">
+              <option value="distance">Shortest Distance</option>
+              <option value="time">Fastest Time</option>
+              <option value="fuel" selected>Fuel Efficiency</option>
+              <option value="emissions">Lowest Emissions</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success mt-3">🚛 Optimize Route</button>
+    </form>
+
+    <!-- Route Results -->
+    <div id="routeResult" class="mt-4"></div>
+  </section>
+
+  <!-- NEW: Analytics Dashboard -->
+  <section id="analytics" class="container" data-aos="fade-up">
+    <h2 class="section-title">Business Analytics Dashboard</h2>
+    
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="metric-card">
+          <div class="metric-value" id="fuelEfficiency">87%</div>
+          <div class="metric-label">Fuel Efficiency</div>
+          <small class="trend-up">↗ +5% this month</small>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="metric-card">
+          <div class="metric-value" id="customerSat">4.8</div>
+          <div class="metric-label">Customer Satisfaction</div>
+          <small class="trend-up">↗ +0.3 this week</small>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="metric-card">
+          <div class="metric-value" id="routeOptimization">92%</div>
+          <div class="metric-label">Route Optimization</div>
+          <small class="trend-up">↗ +12% this month</small>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="metric-card">
+          <div class="metric-value" id="carbonSaved">2.4T</div>
+          <div class="metric-label">CO₂ Saved</div>
+          <small class="trend-up">↗ +0.8T this month</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts and Insights -->
+    <div class="row">
+      <div class="col-md-6">
+        <div class="highlight-box">
+          <h4>Weekly Performance Trends</h4>
+          <div class="mock-chart bg-light d-flex align-items-center justify-content-center" style="height: 300px; border-radius: 8px;">
+            <div class="text-center">
+              <div class="progress-ring">
+                <svg class="progress-ring">
+                  <circle class="progress-ring-circle"></circle>
+                  <circle class="progress-ring-fill" style="stroke-dashoffset: 65;"></circle>
+                </svg>
+              </div>
+              <h5 class="mt-3">Efficiency Score: 87%</h5>
+              <p class="text-muted">📈 Trending upward</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="highlight-box">
+          <h4>Route Optimization Impact</h4>
+          <div class="row text-center">
+            <div class="col-6">
+              <h3 class="text-success">€2,340</h3>
+              <p>Monthly Fuel Savings</p>
+            </div>
+            <div class="col-6">
+              <h3 class="text-primary">18hrs</h3>
+              <p>Time Saved Weekly</p>
+            </div>
+          </div>
+          <div class="row text-center mt-3">
+            <div class="col-6">
+              <h3 class="text-warning">45km</h3>
+              <p>Reduced Daily Distance</p>
+            </div>
+            <div class="col-6">
+              <h3 class="text-info">12%</h3>
+              <p>Customer Satisfaction ↑</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Predictive Insights -->
+    <div class="highlight-box">
+      <h4>🔮 AI-Powered Insights & Recommendations</h4>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="p-3 border rounded bg-success text-white">
+            <h6>⚡ Quick Win</h6>
+            <p class="mb-1">Optimize Tuesday routes to save 15% fuel</p>
+            <small>Impact: €400/month</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded bg-info text-white">
+            <h6>📊 Trend Alert</h6>
+            <p class="mb-1">Customer satisfaction dipping in Zone 3</p>
+            <small>Recommend: Increase frequency</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 border rounded bg-warning text-white">
+            <h6>🎯 Growth Opportunity</h6>
+            <p class="mb-1">Demand increasing in suburban areas</p>
+            <small>Consider: Fleet expansion</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEW: Customer Portal -->
+  <section id="customer-portal" class="container" data-aos="fade-up">
+    <h2 class="section-title">Customer Portal</h2>
+    
+    <div class="row">
+      <!-- Service Overview -->
+      <div class="col-md-8">
+        <div class="highlight-box">
+          <h4>Your Service Overview</h4>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p><strong>Account:</strong> <span id="customerName">Green Business Corp</span></p>
+              <p><strong>Service Plan:</strong> Premium Commercial</p>
+              <p><strong>Next Pickup:</strong> Tomorrow, 9:00 AM</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Monthly Savings:</strong> €1,240</p>
+              <p><strong>CO₂ Reduced:</strong> 450kg this month</p>
+              <p><strong>Recycling Rate:</strong> 78%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service History -->
+        <div class="highlight-box">
+          <h4>Recent Service History</h4>
+          <div class="service-history">
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+              <div>
+                <strong>General Waste Collection</strong>
+                <br><small class="text-muted">June 24, 2025 - 2:30 PM</small>
+              </div>
+              <span class="service-status status-completed">Completed</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+              <div>
+                <strong>Recycling Pickup</strong>
+                <br><small class="text-muted">June 22, 2025 - 10:15 AM</small>
+              </div>
+              <span class="service-status status-completed">Completed</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+              <div>
+                <strong>Organic Waste Collection</strong>
+                <br><small class="text-muted">June 27, 2025 - 9:00 AM</small>
+              </div>
+              <span class="service-status status-pending">Scheduled</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="highlight-box">
+          <h4>Quick Actions</h4>
+          <div class="row">
+            <div class="col-md-4">
+              <button class="btn btn-outline-success w-100 mb-2">📅 Schedule Pickup</button>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-outline-primary w-100 mb-2">📊 View Reports</button>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-outline-warning w-100 mb-2">💬 Contact Support</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-md-4">
+        <!-- Environmental Impact -->
+        <div class="highlight-box">
+          <h5>🌱 Environmental Impact</h5>
+          <div class="text-center mb-3">
+            <div class="progress-ring">
+              <svg class="progress-ring">
+                <circle class="progress-ring-circle"></circle>
+                <circle class="progress-ring-fill" style="stroke-dashoffset: 98;"></circle>
+              </svg>
+            </div>
+            <h6 class="mt-2">78% Recycling Rate</h6>
+          </div>
+          <small class="d-block mb-2">🏆 <strong>Achievement:</strong> Eco Champion</small>
+          <small class="d-block mb-2">🎯 <strong>Goal:</strong> 80% by month-end</small>
+          <small class="d-block">📈 <strong>Progress:</strong> +8% this month</small>
+        </div>
+
+        <!-- Notifications -->
+        <div class="highlight-box">
+          <h5>🔔 Recent Notifications</h5>
+          <div class="notification-item mb-2 p-2 bg-light rounded">
+            <small><strong>Pickup Reminder</strong><br>Tomorrow's collection at 9:00 AM</small>
+          </div>
+          <div class="notification-item mb-2 p-2 bg-light rounded">
+            <small><strong>Monthly Report Ready</strong><br>Your sustainability report is available</small>
+          </div>
+          <div class="notification-item p-2 bg-light rounded">
+            <small><strong>Service Update</strong><br>Route optimized - 15min earlier pickup</small>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="highlight-box">
+          <h5>💭 Rate Our Service</h5>
+          <div class="text-center">
+            <div class="mb-2">
+              <span class="text-warning" style="font-size: 1.5rem;">⭐⭐⭐⭐⭐</span>
+            </div>
+            <textarea class="form-control mb-2" rows="3" placeholder="Share feedback..."></textarea>
+            <button class="btn btn-sm btn-success">Submit Feedback</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="map" class="container" data-aos="fade-up">
+    <h2 class="section-title">Map View</h2>
+    <!-- Nature Image Carousel -->
+    <div class="nature-carousel mb-4">
+      <div id="natureCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" alt="Forest" class="d-block w-100" />
+          </div>
+          <div class="carousel-item">
+            <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80" alt="River" class="d-block w-100" />
+          </div>
+          <div class="carousel-item">
+            <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80" alt="Mountains" class="d-block w-100" />
+          </div>
+          <div class="carousel-item">
+            <img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=800&q=80" alt="Meadow" class="d-block w-100" />
+          </div>
+          <div class="carousel-item">
+            <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=800&q=80" alt="Lake" class="d-block w-100" />
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#natureCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#natureCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+    <div class="highlight-box">
+      <div class="mock-map" style="position:relative;">
+        <!-- Real interactive map -->
+        <div id="realMap"></div>
+        <div class="map-content">
+          <h4 class="text-success mb-3">🗺️ Interactive Map</h4>
+          <p class="mb-3">Showing waste collection routes and scheduled pickups in Dublin area</p>
+          <div class="d-flex justify-content-center gap-3 mb-3">
+            <span class="badge bg-success" id="activeRoutesBadge">📍 Active Routes: 12</span>
+            <span class="badge bg-info" id="trucksOnlineBadge">🚛 Trucks Online: 8</span>
+            <span class="badge bg-warning" id="scheduledBadge">⏰ Scheduled: 24</span>
+          </div>
+          <button id="refreshMapBtn" class="btn btn-outline-success">🔄 Refresh Map Data</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="container" data-aos="fade-up">
+    <h2 class="section-title">Contact Us</h2>
+    <div class="highlight-box">
+      <p>If you have any questions, concerns, or are interested in our services, feel free to reach out to us through the following channels:</p>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><strong>Phone:</strong> +1 234 567 890</li>
+        <li class="list-group-item"><strong>Email:</strong> support@greencycle.com</li>
+        <li class="list-group-item"><strong>Website:</strong> <a href="https://www.greencycle.com" target="_blank">www.greencycle.com</a></li>
+        <li class="list-group-item"><strong>Head Office:</strong> 123 Eco Avenue, Dublin, Ireland</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Chat Widget -->
+  <div class="chat-widget" onclick="toggleChat()">
+    💬
+    <div class="notification-badge">3</div>
+  </div>
+  <!-- Enhanced Chatbot Window -->
+  <div id="chatWindow" class="chat-window" style="display:none;">
+    <div class="chat-header d-flex justify-content-between align-items-center">
+      <span><strong>GreenCycle Support</strong></span>
+      <button class="btn-close" aria-label="Close" onclick="toggleChat()"></button>
+    </div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-bot-msg">👋 Hi! How can I help you today?</div>
+    </div>
+    <div class="chat-input-area d-flex">
+      <input id="chatInput" type="text" class="form-control me-2" placeholder="Type your message..." onkeydown="if(event.key==='Enter'){sendChatMessage();}" />
+      <button class="btn btn-success" onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Eco Fact Widget -->
+  <div class="eco-fact-widget" id="ecoFactWidget" style="display:none;">
+    <span class="eco-fact-leaf">🌿</span>
+    <span id="ecoFactText">Did you know? Recycling one aluminum can saves enough energy to run a TV for 3 hours!</span>
+  </div>
+
+  <footer class="bg-light text-center text-lg-start border-top py-4 mt-5">
+    <div class="container">
+      <p class="text-muted mb-0">&copy; 2025 GreenCycle Waste Management. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+  <!-- Add Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // In-memory storage instead of localStorage
+    let userData = null;
+    let schedules = [];
+    let routeOptimization = {
+      fuelSavings: 2340,
+      timeSaved: 18,
+      distanceReduced: 45,
+      satisfactionIncrease: 12
+    };
+    // Fix: Initialize chatOpen for chatbot toggle
+    let chatOpen = false;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      AOS.init();
+      
+      // Show home section by default
+      showSection('home');
+      setActiveNav(document.querySelector('a[href="#home"]'));
+      
+      // Form handlers
+      setupRegistrationForm();
+      setupScheduleForm();
+      setupAdvancedRouteForm();
+      
+      // Initial renders
+      renderSchedules();
+      renderUserProfile();
+      updateAnalyticsDashboard();
+      updateCustomerPortal();
+    });
+
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('section').forEach(sec => sec.style.display = 'none');
+      
+      // Show target section
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.style.display = 'block';
+        if (sectionId === 'map') {
+          setTimeout(initMap, 200); // Delay to ensure DOM is ready
+        }
+      }
+    }
+
+    function setActiveNav(activeLink) {
+      // Remove active class from all nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      // Add active class to clicked link
+      if (activeLink) {
+        activeLink.classList.add('active');
+      }
+    }
+
+    function setupRegistrationForm() {
+      const registrationForm = document.getElementById('registrationForm');
+      if (registrationForm) {
+        registrationForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const name = document.getElementById('name').value;
+          const email = document.getElementById('email').value;
+          const phone = document.getElementById('phone').value;
+          
+          userData = { name, email, phone };
+          alert('Registration successful!');
+          renderUserProfile();
+          this.reset();
+        });
+      }
+    }
+
+    function renderUserProfile() {
+      const userProfile = document.getElementById('userProfile');
+      if (userProfile && userData) {
+        userProfile.style.display = 'block';
+        userProfile.innerHTML = `
+          <h4 class="text-success">Registered User Details</h4>
+          <p><strong>Name:</strong> ${userData.name}</p>
+          <p><strong>Email:</strong> ${userData.email}</p>
+          <p><strong>Phone:</strong> ${userData.phone}</p>`;
+      } else if (userProfile) {
+        userProfile.style.display = 'none';
+      }
+    }
+
+    function setupScheduleForm() {
+      const scheduleForm = document.getElementById('scheduleForm');
+      if (scheduleForm) {
+        scheduleForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const date = document.getElementById('date').value;
+          const time = document.getElementById('time').value;
+          const location = document.getElementById('location').value;
+          
+          schedules.push({ date, time, location });
+          renderSchedules();
+          this.reset();
+        });
+      }
+    }
+
+    function renderSchedules() {
+      const scheduleCards = document.getElementById('scheduleCards');
+      if (!scheduleCards) return;
+      
+      scheduleCards.innerHTML = '';
+      schedules.forEach((schedule, index) => {
+        const card = document.createElement('div');
+        card.className = 'schedule-card';
+        card.innerHTML = `
+          <h5 class="text-success">${schedule.date} at ${schedule.time}</h5>
+          <p class="mb-2"><strong>Location:</strong> ${schedule.location}</p>
+          <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${index})">Delete Schedule</button>
+        `;
+        scheduleCards.appendChild(card);
+      });
+    }
+
+    function deleteSchedule(index) {
+      schedules.splice(index, 1);
+      renderSchedules();
+    }
+
+    function setupAdvancedRouteForm() {
+      const routeForm = document.getElementById('routeForm');
+      const routeResult = document.getElementById('routeResult');
+
+      if (routeForm && routeResult) {
+        routeForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const locationsText = document.getElementById('locations').value;
+          const vehicleType = document.getElementById('vehicleType').value;
+          const prioritizeBy = document.getElementById('prioritizeBy').value;
+          
+          const locations = locationsText.split('\n').map(loc => loc.trim()).filter(loc => loc);
+          
+          // Advanced optimization simulation
+          const optimizationResult = performAdvancedOptimization(locations, vehicleType, prioritizeBy);
+          
+          routeResult.innerHTML = `
+            <div class="highlight-box">
+              <h5 class="text-success">🎯 Optimized Route Results</h5>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <h6>Optimized Route:</h6>
+                  <p class="h6 text-primary">${optimizationResult.route.join(' → ')}</p>
+                </div>
+                <div class="col-md-6">
+                  <h6>Optimization Metrics:</h6>
+                  <small class="d-block">🛣️ Total Distance: ${optimizationResult.distance}km</small>
+                  <small class="d-block">⏱️ Estimated Time: ${optimizationResult.time}hrs</small>
+                  <small class="d-block">⛽ Fuel Cost: €${optimizationResult.fuelCost}</small>
+                  <small class="d-block">🌿 CO₂ Emissions: ${optimizationResult.emissions}kg</small>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="text-center p-2 bg-success text-white rounded">
+                    <strong>€${optimizationResult.savings}</strong>
+                    <br><small>Cost Savings</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 bg-info text-white rounded">
+                    <strong>${optimizationResult.efficiency}%</strong>
+                    <br><small>Efficiency Gain</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 bg-warning text-white rounded">
+                    <strong>${optimizationResult.timeReduction}min</strong>
+                    <br><small>Time Saved</small>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 bg-primary text-white rounded">
+                    <strong>${optimizationResult.carbonReduction}kg</strong>
+                    <br><small>CO₂ Reduced</small>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        });
+      }
+    }
+
+    function performAdvancedOptimization(locations, vehicleType, prioritizeBy) {
+      // Simulate advanced optimization algorithm
+      const vehicleData = {
+        small: { capacity: 5, fuelRate: 8.5, co2Rate: 2.1 },
+        medium: { capacity: 10, fuelRate: 12.3, co2Rate: 3.2 },
+        large: { capacity: 15, fuelRate: 18.7, co2Rate: 4.8 }
+      };
+      
+      const vehicle = vehicleData[vehicleType];
+      const optimizedLocations = [...locations];
+      
+      // Simple optimization simulation (in reality, this would use complex algorithms)
+      if (prioritizeBy === 'distance') {
+        optimizedLocations.sort();
+      } else if (prioritizeBy === 'fuel') {
+        optimizedLocations.reverse();
+      }
+      
+      const baseDistance = locations.length * 12; // km
+      const optimizedDistance = Math.round(baseDistance * 0.78); // 22% improvement
+      const estimatedTime = Math.round(optimizedDistance / 25 * 10) / 10; // hours
+      const fuelCost = Math.round(optimizedDistance * vehicle.fuelRate * 1.45 / 100); // €
+      const emissions = Math.round(optimizedDistance * vehicle.co2Rate);
+      
+      return {
+        route: optimizedLocations,
+        distance: optimizedDistance,
+        time: estimatedTime,
+        fuelCost: fuelCost,
+        emissions: emissions,
+        savings: Math.round(baseDistance * 0.22 * 2.1), // Savings from optimization
+        efficiency: 78,
+        timeReduction: Math.round((baseDistance - optimizedDistance) * 2.3),
+        carbonReduction: Math.round(emissions * 0.22)
+      };
+    }
+
+    function updateAnalyticsDashboard() {
+      // Simulate real-time data updates
+      setInterval(() => {
+        const metrics = ['fuelEfficiency', 'customerSat', 'routeOptimization', 'carbonSaved'];
+        metrics.forEach(metric => {
+          const element = document.getElementById(metric);
+          if (element) {
+            // Simulate small variations in metrics
+            const current = parseFloat(element.textContent);
+            const variation = (Math.random() - 0.5) * 0.1;
+            let newValue;
+            
+            if (metric === 'customerSat') {
+              newValue = Math.max(1, Math.min(5, current + variation)).toFixed(1);
+            } else if (metric === 'carbonSaved') {
+              newValue = Math.max(0, current + variation).toFixed(1) + 'T';
+            } else {
+              newValue = Math.max(0, Math.min(100, current + variation)).toFixed(0) + '%';
+            }
+            
+            element.textContent = newValue;
+          }
+        });
+      }, 5000); // Update every 5 seconds
+    }
+
+    function updateCustomerPortal() {
+      if (userData) {
+        const customerNameElement = document.getElementById('customerName');
+        if (customerNameElement) {
+          customerNameElement.textContent = userData.name;
+        }
+      }
+    }
+
+    function toggleChat() {
+      chatOpen = !chatOpen;
+      const chatWindow = document.getElementById('chatWindow');
+      if (chatOpen) {
+        chatWindow.style.display = 'flex';
+        setTimeout(() => {
+          document.getElementById('chatInput').focus();
+        }, 200);
+      } else {
+        chatWindow.style.display = 'none';
+      }
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
+      const chatMessages = document.getElementById('chatMessages');
+      // Add user message
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.className = 'chat-user-msg';
+      userMsgDiv.textContent = msg;
+      chatMessages.appendChild(userMsgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      input.value = '';
+      // Simulate bot reply
+      setTimeout(() => {
+        const botMsgDiv = document.createElement('div');
+        botMsgDiv.className = 'chat-bot-msg';
+        botMsgDiv.textContent = getBotReply(msg);
+        chatMessages.appendChild(botMsgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 800);
+    }
+    function getBotReply(userMsg) {
+      const lower = userMsg.toLowerCase();
+      if (lower.includes('schedule')) return 'To schedule a pickup, go to the Schedule section or tell me your preferred date and location!';
+      if (lower.includes('route')) return 'Our route optimization uses AI to reduce emissions and save fuel. Want to know more?';
+      if (lower.includes('account')) return 'For account management, visit the Portal or describe your issue.';
+      if (lower.includes('report')) return 'You can view your sustainability reports in the Portal or Analytics section.';
+      if (lower.includes('support')) return 'Our support team is here 24/7! Please describe your issue.';
+      if (lower.includes('hello') || lower.includes('hi')) return 'Hello! 👋 How can I assist you today?';
+      if (lower.includes('thanks') || lower.includes('thank you')) return 'You’re welcome! If you have more questions, just ask.';
+      return 'I’m here to help with scheduling, routes, reports, and more!';
+    }
+
+    // --- Interactive Map Logic ---
+    let map, markers = [];
+    function initMap() {
+      if (map) return; // Prevent re-init
+      map = L.map('realMap').setView([53.3498, -6.2603], 12); // Dublin
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      addDemoMarkers();
+    }
+
+    function addDemoMarkers() {
+      // Remove old markers
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      // Generate random demo markers in Dublin area
+      const baseLat = 53.3498, baseLng = -6.2603;
+      const nRoutes = Math.floor(Math.random() * 10) + 10;
+      const nTrucks = Math.floor(Math.random() * 8) + 5;
+      const nScheduled = Math.floor(Math.random() * 30) + 20;
+
+      // Active routes (green)
+      for (let i = 0; i < nRoutes; i++) {
+        const marker = L.marker([
+          baseLat + (Math.random() - 0.5) * 0.08,
+          baseLng + (Math.random() - 0.5) * 0.15
+        ], { title: 'Active Route' }).addTo(map);
+        marker.bindPopup('Active Route');
+        markers.push(marker);
+      }
+      // Trucks online (blue)
+      for (let i = 0; i < nTrucks; i++) {
+        const marker = L.circleMarker([
+          baseLat + (Math.random() - 0.5) * 0.08,
+          baseLng + (Math.random() - 0.5) * 0.15
+        ], { color: '#17a2b8', radius: 8 }).addTo(map);
+        marker.bindPopup('Truck Online');
+        markers.push(marker);
+      }
+      // Scheduled pickups (orange)
+      for (let i = 0; i < nScheduled; i++) {
+        const marker = L.circleMarker([
+          baseLat + (Math.random() - 0.5) * 0.08,
+          baseLng + (Math.random() - 0.5) * 0.15
+        ], { color: '#ffc107', radius: 6 }).addTo(map);
+        marker.bindPopup('Scheduled Pickup');
+        markers.push(marker);
+      }
+
+      // Update badges
+      document.getElementById('activeRoutesBadge').textContent = `📍 Active Routes: ${nRoutes}`;
+      document.getElementById('trucksOnlineBadge').textContent = `🚛 Trucks Online: ${nTrucks}`;
+      document.getElementById('scheduledBadge').textContent = `⏰ Scheduled: ${nScheduled}`;
+    }
+
+    // Initialize map when Map section is shown
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('section').forEach(sec => sec.style.display = 'none');
+      
+      // Show target section
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.style.display = 'block';
+        if (sectionId === 'map') {
+          setTimeout(initMap, 200); // Delay to ensure DOM is ready
+        }
+      }
+    }
+
+    // Map refresh functionality
+    document.getElementById('refreshMapBtn')?.addEventListener('click', () => {
+      // Simulate map refresh
+      const mapContent = document.querySelector('.map-content');
+      if (mapContent) {
+        mapContent.style.opacity = '0.5';
+        setTimeout(() => {
+          mapContent.style.opacity = '1';
+          // Update some demo data
+          const badges = mapContent.querySelectorAll('.badge');
+          if (badges.length >= 3) {
+            badges[0].textContent = `📍 Active Routes: ${Math.floor(Math.random() * 20) + 10}`;
+            badges[1].textContent = `🚛 Trucks Online: ${Math.floor(Math.random() * 15) + 5}`;
+            badges[2].textContent = `⏰ Scheduled: ${Math.floor(Math.random() * 50) + 20}`;
+          }
+          addDemoMarkers();
+        }, 500);
+      }
+    });
+
+    // Form validation animations
+    document.querySelectorAll("form").forEach(form => {
+      form.addEventListener("submit", function(e) {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+          form.classList.add("was-validated");
+        }
+      });
+    });
+
+    // Animated input borders on focus
+    document.querySelectorAll("input, textarea").forEach(input => {
+      input.addEventListener("focus", function () {
+        input.classList.add("border-success", "shadow");
+      });
+      input.addEventListener("blur", function () {
+        input.classList.remove("border-success", "shadow");
+      });
+    });
+
+    // --- Eco Fact Widget Logic ---
+    const ecoFacts = [
+      "Recycling one aluminum can saves enough energy to run a TV for 3 hours!",
+      "Composting food waste can reduce landfill waste by up to 30%.",
+      "Turning off the tap while brushing your teeth saves up to 8 gallons of water a day.",
+      "Glass can be recycled endlessly without loss in quality or purity.",
+      "Every ton of recycled paper saves 17 trees and 7,000 gallons of water.",
+      "LED bulbs use at least 75% less energy than incandescent lighting.",
+      "Biking or walking for short trips reduces your carbon footprint and improves health!",
+      "Plastic takes up to 1,000 years to decompose in landfills.",
+      "Planting trees helps absorb CO₂ and provides oxygen for us to breathe.",
+      "Using reusable bags can save hundreds of plastic bags per person each year."
+    ];
+    let ecoFactIdx = 0;
+    const ecoFactWidget = document.getElementById('ecoFactWidget');
+    const ecoFactText = document.getElementById('ecoFactText');
+    function showEcoFactWidget() {
+      ecoFactWidget.style.display = 'flex';
+      ecoFactText.textContent = ecoFacts[ecoFactIdx];
+      setInterval(() => {
+        ecoFactIdx = (ecoFactIdx + 1) % ecoFacts.length;
+        ecoFactText.textContent = ecoFacts[ecoFactIdx];
+        ecoFactWidget.classList.remove('eco-fact-animate');
+        void ecoFactWidget.offsetWidth; // trigger reflow
+        ecoFactWidget.classList.add('eco-fact-animate');
+      }, 6000);
+    }
+    document.addEventListener('DOMContentLoaded', showEcoFactWidget);
+  </script>
+</body>
+</html>
